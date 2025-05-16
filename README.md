@@ -15,3 +15,4 @@ This Streamlit app lets users generate realistic or imaginative images simply by
 1. Run the app:
    ```bash
    streamlit run app.py
+
