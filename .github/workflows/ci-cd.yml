@@ -1,51 +1,29 @@
-name: CI/CD Pipeline (with Runner‑only Deploy)
+name: CI/CD Pipeline - Build and Push Docker Image
 
 on:
   push:
     branches: [ main ]
 
 jobs:
-  # … your existing test and build‑and‑push jobs …
-
-  deploy-to-runner:
-    needs: build-and-push
+  build-and-push:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Log in (optional if you only care about local build)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Pull image (or build locally)
-        run: |
-          # If you want to pull your newly pushed image:
-          docker pull junaidpro/image_generation_streamlit_app:latest
-          #—or rebuild from source instead:
-          # docker build -t rag-test:latest .
-
-      - name: Run container on runner
-        run: |
-          # Run detached, forwarding port 8501 → 8501
-          docker run -d --name rag-test \
-            -p 8501:8501 \
-            junaidpro/image_generation_streamlit_app:latest
-
-      - name: Wait for service to start
-        run: |
-          # give it a few seconds to boot
-          sleep 10
-
-      - name: Smoke test via HTTP
-        run: |
-          echo "Hitting http://localhost:8501/health"
-          curl --fail http://localhost:8501/health
-
-      - name: Tear down test container
-        run: |
-          docker stop rag-test
-          docker rm rag-test
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: junaidpro/image_generation_streamlit_app:latest
